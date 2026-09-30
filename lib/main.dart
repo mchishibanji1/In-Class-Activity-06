@@ -1,122 +1,217 @@
+// In-Class Activity 06 — Drawing with Flutter
+// Student: Marc Chishibanji
+// Date: September 30, 2026
+
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'dart:math' show pi, Random;
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+void main() => runApp(const SmileyApp());
 
-  // This widget is the root of your application.
+class SmileyApp extends StatelessWidget {
+  const SmileyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'Smiley Painter Lab',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      home: const DrawingPlayground(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+enum FaceType { classic, sleepy, surprised }
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class DrawingPlayground extends StatefulWidget {
+  const DrawingPlayground({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<DrawingPlayground> createState() => _DrawingPlaygroundState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _DrawingPlaygroundState extends State<DrawingPlayground> {
+  double mood = 0.8;
+  FaceType faceType = FaceType.classic;
+  final Random _random = Random();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  void _cycleFace() {
+    final next = FaceType.values[(faceType.index + 1) % FaceType.values.length];
+    setState(() => faceType = next);
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Switched to ${next.name.toUpperCase()}'),
+          duration: const Duration(milliseconds: 800),
+        ),
+      );
+  }
+
+  void _randomizeMood() {
+    final newMood = _random.nextDouble();
+    setState(() => mood = newMood);
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Mood: ${newMood.toStringAsFixed(2)}'),
+          duration: const Duration(milliseconds: 800),
+        ),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      appBar: AppBar(title: const Text('CustomPainter Smiley Lab')),
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              // LEVEL 4: Gesture detection wraps the canvas
+              child: GestureDetector(
+                onTap: _cycleFace,
+                onLongPress: _randomizeMood,
+                child: CustomPaint(
+                  size: const Size(300, 300),
+                  painter: SmileyPainter(mood: mood, faceType: faceType),
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text('Mood: ${mood.toStringAsFixed(2)}'),
+                Slider(
+                  value: mood,
+                  onChanged: (double v) => setState(() => mood = v),
+                ),
+                const SizedBox(height: 8),
+                DropdownButton<FaceType>(
+                  value: faceType,
+                  onChanged: (FaceType? v) {
+                    if (v != null) setState(() => faceType = v);
+                  },
+                  items: FaceType.values.map((FaceType f) {
+                    return DropdownMenuItem<FaceType>(
+                      value: f,
+                      child: Text(f.name.toUpperCase()),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Tap face to cycle · Long-press to randomize mood',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+}
+
+class SmileyPainter extends CustomPainter {
+  SmileyPainter({required this.mood, required this.faceType});
+  final double mood;
+  final FaceType faceType;
+
+  Color get faceColor {
+    if (mood < 0.35) return Colors.blue.shade200;
+    if (mood <= 0.70) return Colors.yellow.shade600;
+    return Colors.orange.shade400;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = size.shortestSide * 0.40;
+
+    // 1) Face fill
+    canvas.drawCircle(c, r, Paint()..color = faceColor);
+
+    // 2) Face border
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = Colors.black87
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4,
+    );
+
+    final eyeY = c.dy - r * 0.18;
+    final eyeDx = r * 0.35;
+    final eyePaint = Paint()..color = Colors.black87;
+
+    // 3) Eyes
+    if (faceType == FaceType.sleepy) {
+      final linePaint = Paint()
+        ..color = Colors.black87
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(
+        Offset(c.dx - eyeDx - 12, eyeY),
+        Offset(c.dx - eyeDx + 12, eyeY),
+        linePaint,
+      );
+      canvas.drawLine(
+        Offset(c.dx + eyeDx - 12, eyeY),
+        Offset(c.dx + eyeDx + 12, eyeY),
+        linePaint,
+      );
+    } else if (faceType == FaceType.surprised) {
+      canvas.drawCircle(Offset(c.dx - eyeDx, eyeY), 18, eyePaint);
+      canvas.drawCircle(Offset(c.dx + eyeDx, eyeY), 18, eyePaint);
+    } else {
+      canvas.drawCircle(Offset(c.dx - eyeDx, eyeY), 14, eyePaint);
+      canvas.drawCircle(Offset(c.dx + eyeDx, eyeY), 14, eyePaint);
+    }
+
+    // 4) Mouth
+    if (faceType == FaceType.surprised) {
+      final openMouth = Rect.fromCenter(
+        center: Offset(c.dx, c.dy + r * 0.35),
+        width: r * 0.45,
+        height: r * 0.55,
+      );
+      canvas.drawOval(openMouth, Paint()..color = Colors.black87);
+    } else {
+      final mouthPaint = Paint()
+        ..color = Colors.black87
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round;
+
+      final mouthRect = Rect.fromCenter(
+        center: Offset(c.dx, c.dy + r * 0.15),
+        width: r * 1.0,
+        height: r * (0.4 + mood * 0.5),
+      );
+
+      if (mood >= 0.5) {
+        canvas.drawArc(mouthRect, 0.15 * pi, 0.70 * pi, false, mouthPaint);
+      } else {
+        final frownRect = mouthRect.translate(0, r * 0.25);
+        canvas.drawArc(frownRect, 1.15 * pi, 0.70 * pi, false, mouthPaint);
+      }
+    }
+
+    // 5) Hat
+    canvas.drawRect(
+      Rect.fromLTWH(c.dx - r * 0.5, c.dy - r * 1.1, r * 1.0, r * 0.3),
+      Paint()..color = Colors.red,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant SmileyPainter oldDelegate) {
+    return oldDelegate.mood != mood || oldDelegate.faceType != faceType;
   }
 }
